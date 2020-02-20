@@ -4,6 +4,9 @@ import {
     AppRegistry, StyleSheet, ScrollView, Alert, Text, View, Image,
     TouchableWithoutFeedback, Dimensions, ToastAndroid, BackHandler
 } from 'react-native'
+import {DeviceEventEmitter } from 'react-native';
+import LocationServicesDialogBox from "react-native-android-location-services-dialog-box";
+
 import { TouchableOpacity, TextInput, ActivityIndicator } from 'react-native'
 import { pickerValue, KeyboardAvoidingView } from 'react-native'
 import { DatePickerDialog } from 'react-native-datepicker-dialog'
@@ -18,6 +21,7 @@ import {
     heightPercentageToDP as hp
 }
     from 'react-native-responsive-screen';
+import Geolocation from 'react-native-geolocation-service';
 
 let tmng_view_background = require('../../img/ess_2_background.png')
 let text_field_img = require('../../img/text_fields_2.png')
@@ -31,15 +35,33 @@ let user_earea_dtl = '';
 let arr_client_id = ''
 let arr_emp_id = ''
 let time_checked
-let longitude_data = ''
-let latitude_data = ''
+
 // let isCancelled = false
 let back_press = require('../../img/icon_back_1.png')
+LocationServicesDialogBox.checkLocationServicesIsEnabled({
+    message: "<font color='black'>Use Location ?</font>",
+    ok: "YES",
+    cancel: "",
+    style: { // (optional)
+        backgroundColor: 'white',// (optional)
+        
+        positiveButtonTextColor: '#ffffff',// (optional)
+        positiveButtonBackgroundColor: '#5fba7d',// (optional)
+        
+        negativeButtonTextColor: '#ffffff',// (optional)
+        negativeButtonBackgroundColor: '#ba5f5f'// (optional)
+    }
+}).then(function(success) {
+    console.log(success);
+}).catch((error) => {
+    console.log(error.message);
+});
 
 class timeManagement extends Component {
     constructor(props) {
         super(props);
         this.state = {
+            initialPosition: 'unknown',
             temp: 0,
             // client: "agp",
             // employee: '',
@@ -56,6 +78,9 @@ class timeManagement extends Component {
             default_client: '150046',
             activity_loader: true,
             DateText: '',
+            error : null,
+            latitude : 0,
+            longitude : 0,
             DateHolder: null,
             ontextfocus: false,
             client: [
@@ -86,7 +111,38 @@ class timeManagement extends Component {
         // Add a 'scroll' ref to your ScrollView
         this.scroll.props.scrollToFocusedInput(reactNode)
     }
-
+    // componentDidMount() {
+    //     LocationServicesDialogBox.checkLocationServicesIsEnabled({
+    //         message: "<h2>Use Location ?</h2>This app wants to change your device settings:<br/><br/>Use GPS, Wi-Fi, and cell network for location<br/><br/><a href='#'>Learn more</a>",
+    //         ok: "YES",
+    //         cancel: "NO",
+    //         enableHighAccuracy: true, // true => GPS AND NETWORK PROVIDER, false => GPS OR NETWORK PROVIDER
+    //         showDialog: true, // false => Opens the Location access page directly
+    //         openLocationServices: true, // false => Directly catch method is called if location services are turned off
+    //         preventOutSideTouch: false, //true => To prevent the location services popup from closing when it is clicked outside
+    //         preventBackClick: false, //true => To prevent the location services popup from closing when it is clicked back button
+    //         providerListener: true // true ==> Trigger "locationProviderStatusChange" listener when the location state changes
+    //     }).then(function(success) {
+    //         // success => {alreadyEnabled: true, enabled: true, status: "enabled"} 
+    //             navigator.geolocation.getCurrentPosition((position) => {
+    //                 let initialPosition = JSON.stringify(position);
+    //                 this.setState({ initialPosition });
+    //             }, error => console.log(error), { enableHighAccuracy: false, timeout: 20000, maximumAge: 1000 });
+    //         }.bind(this)
+    //     ).catch((error) => {
+    //         console.log(error.message);
+    //     });
+        
+    //     DeviceEventEmitter.addListener('locationProviderStatusChange', function(status) { // only trigger when "providerListener" is enabled
+    //         console.log(status); //  status => {enabled: false, status: "disabled"} or {enabled: true, status: "enabled"}
+    //     });
+    // }
+    
+    componentWillUnmount() {
+        // used only when "providerListener" is enabled
+        LocationServicesDialogBox.stopListener(); // Stop the "locationProviderStatusChange" listener.
+    } 
+ 
     async componentDidMount() {
         console.log('first time aya')
         if (this.temp_time == false) {
@@ -173,24 +229,28 @@ class timeManagement extends Component {
             });
     };
 
-    async componentDidsMount() {
-
-      tempID_out = navigator.geolocation.getCurrentPosition((position) => {
-            latitude_data = position.coords.latitude
-            longitude_data = position.coords.longitude
-        },
-            (error) => {
-                latitude_data = '01'
-                longitude_data = '01'
+    async componentWillMount() {
+         console.log('hello componentWillMount')
+        Geolocation.getCurrentPosition(
+            (position) => {
+                console.log('position.latitude: ', position);
+                this.setState({
+                    latitude: position.coords.latitude,
+                    longitude: position.coords.longitude
+                })
             },
-            { enableHighAccuracy: false, timeout: 20000, maximumAge: 1000 })
-
-        var that = this;
-        BackHandler.addEventListener('hardwareBackPress', function () {
-            that.props.navigation.navigate('EssMain')
-            return true;
-        });
+            (error) => {
+                console.log("err from did mount")
+                console.log(error.code, error.message);
+                
+            },
+            { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 }
+        );
+         this.setState({
+                    activity_loader: false,
+                })
     }
+
 
     async componentWillUnmount() {
         this.interval && clearInterval(this.interval);
@@ -206,9 +266,10 @@ class timeManagement extends Component {
             return true;
         });
     }
+    
 
 
-    async time_in_press() {
+     time_in_press() {
 
         this.setState({
             activity_loader: true
@@ -220,14 +281,14 @@ class timeManagement extends Component {
         console.log('time->', moment(new Date()).format('hh:mm'))
         console.log('type->', '01')
         console.log('remarks->', this.state.txtremarks)
-        console.log('lng->', longitude_data)
-        console.log('lat->', latitude_data)
-
-    //    alert("lng "  + longitude_data);
-    //    alert("lat" + latitude_data)
+        console.log('lng->', this.state.longitude)
+        console.log('lat->', this.state.latitude)
+        console.log('error',this.state.error)
+       alert("lng "  + this.state.longitude);
+       alert("lat" +this.state.latitude)
 
         // await this.insertAttdData
-        let result = await b.time_in_time_out(
+        let result = b.time_in_time_out(
         
             this.state.user_id,
             this.state.user_id,
@@ -235,8 +296,8 @@ class timeManagement extends Component {
             moment(new Date()).format('YYYY-MM-DD'),
             moment(new Date()).format('HH:mm'),
             this.state.txtremarks,
-            latitude_data,
-            longitude_data
+            this.state.latitude,
+            this.state.longitude
         )
         this.setState({
             //  time_in_out_view: false,
@@ -260,7 +321,7 @@ class timeManagement extends Component {
         }
     }
 
-    async  time_out_press() {
+      time_out_press() {
         console.log('time out main aya')
 
         console.log('empid->', this.state.user_id)
@@ -270,16 +331,16 @@ class timeManagement extends Component {
         console.log('time->', moment(new Date()).format('hh:mm'))
         console.log('type->', '02')
         console.log('remarks->', this.state.txtremarks)
-        console.log('lng->', longitude_data)
-        console.log('lat->', latitude_data)
+        console.log('lng->', this.state.longitude)
+        console.log('lat->', this.state.latitude)
 
-        // alert("lng "  + longitude_data);
-        // alert("lat" + latitude_data)
+        alert("lng "  + this.state.longitude);
+        alert("lat" + this.state.latitude)
  
         this.setState({
             activity_loader: true
         })
-        let result = await b.time_in_time_out(
+        let result =  b.time_in_time_out(
             this.state.user_id,
             this.state.user_id,
             this.state.default_client,
@@ -287,8 +348,8 @@ class timeManagement extends Component {
             moment(new Date()).format('HH:mm'),
             '01',
             this.state.txtremarks,
-            latitude_data,
-            longitude_data
+           this.state.latitude,
+            this.state.longitude
         )
         this.setState({
             activity_loader: false
@@ -386,6 +447,7 @@ class timeManagement extends Component {
         // position: 'absolute'
 
     }}>
+       
         <TouchableOpacity
             style={{
                 height: 50,

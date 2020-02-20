@@ -11,8 +11,8 @@ import TopBar from '../header/index';
 //import { ListItem } from 'native-base';
 import get_data from '../Func.js';
 import ImageSlider from 'react-native-image-slider';
-import Drawer from 'react-native-drawer'
-//import { Drawer } from "native-base";
+//import Drawer from 'react-native-drawer'
+import { Drawer } from "native-base";
 import SideBar from '../Sidebar/sidebar'
 import BarChart from '../AbstractChart/BarChart'
 import b from '../Func'
@@ -246,12 +246,13 @@ class Home_list_View extends Component {
         this.props.navigation.push('MssIndex')
     }
 
-      closeDrawer = () => {
-        this.drawer.close()
-      };
-      openDrawer = () => {
-        this.drawer.open()
-      };
+    closeDrawer = () => {
+        this.drawer._root.close()
+    };
+
+    openDrawer = () => {
+        this.drawer._root.open()
+    };
      
     
 

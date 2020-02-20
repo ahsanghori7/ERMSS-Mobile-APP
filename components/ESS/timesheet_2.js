@@ -227,6 +227,7 @@ class timeSheet_2 extends Component {
                             <Text
                                 style={{
                                     textAlign: 'left',
+                                    width:150,
                                     // marginLeft: 10,
                                     // textAlignVertical:'center',
                                     fontSize: 20,

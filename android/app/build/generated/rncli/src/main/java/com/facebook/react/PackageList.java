@@ -22,6 +22,10 @@ import com.reactcommunity.rndatetimepicker.RNDateTimePickerPackage;
 import org.reactnative.maskedview.RNCMaskedViewPackage;
 // @react-native-community/netinfo
 import com.reactnativecommunity.netinfo.NetInfoPackage;
+// react-native-android-location-services-dialog-box
+import com.showlocationservicesdialogbox.LocationServicesDialogBoxPackage;
+// react-native-geolocation-service
+import com.agontuk.RNFusedLocation.RNFusedLocationPackage;
 // react-native-gesture-handler
 import com.swmansion.gesturehandler.react.RNGestureHandlerPackage;
 // react-native-linear-gradient
@@ -81,6 +85,8 @@ public class PackageList {
       new RNDateTimePickerPackage(),
       new RNCMaskedViewPackage(),
       new NetInfoPackage(),
+      new LocationServicesDialogBoxPackage(),
+      new RNFusedLocationPackage(),
       new RNGestureHandlerPackage(),
       new LinearGradientPackage(),
       new SafeAreaContextPackage(),
